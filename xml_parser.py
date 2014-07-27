@@ -1,6 +1,48 @@
 from urllib2 import Request, urlopen, URLError
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
+import MySQLdb
+import sys
+
+def getDbConnection(hostname,username,password):
+    db_con = MySQLdb.connect(host=hostname,user=username,passwd=password)
+    return db_con
+    
+def setupDB(hostname,username,password):
+    db_con=getDbConnection(hostname,username,password)
+    db_cursor=db_con.cursor()    
+    db_cursor.execute("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'PubMedRepository'");
+    db_stat=db_cursor.fetchone()
+
+     
+    if (not db_stat):
+        start_date="2014-01-01"
+        for mysql_stmt in open('setup_db.sql'):
+            if mysql_stmt.strip():
+                db_cursor.execute(mysql_stmt.strip())
+        db_cursor.execute("insert into current_date values (%s)" % startdate)
+        
+    db_cursor.close()
+    db_con.close()
+
+def getLastId(hostname,username,password):
+    db_con=getDbConnection(hostname,username,password)
+    db_cursor=db_con.cursor() 
+    db_cursor.execute("SELECT LAST_INSERT_ID()")
+    last_id=db_cursor.fetchone()
+    db_cursor.close()
+    db_con.close()
+    return last_id[0]
+    
+def getLastInsertDate(hostname,username,password):
+    db_con=getDbConnection(hostname,username,password)
+    db_cursor=db_con.cursor()
+    db_cursor.execute("SELECT last_insert_date from currentdate");
+    last_insert_date=db_cursor.fetchone()
+    db_cursor.close()
+    db_con.close()
+    return last_insert_date[0]
+
 
 def getData(xml, element):
     data_xml = xml.getElementsByTagName(element)
@@ -97,6 +139,6 @@ def dataFetcher(main_url):
             print 'Got an error code:', e
         if resumption == "none":
             break;
-            
+           
             
 dataFetcher('http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from=2014-01-01&metadataPrefix=pmc')
