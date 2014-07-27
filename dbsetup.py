@@ -5,13 +5,15 @@ def getDbConnection(hostname,username,password):
     db_con = MySQLdb.connect(host=hostname,user=username,passwd=password)
     return db_con
     
-def setupDB(hostname,username,password,startdate):
+def setupDB(hostname,username,password):
     db_con=getDbConnection(hostname,username,password)
     db_cursor=db_con.cursor()    
     db_cursor.execute("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'PubMedRepository'");
     db_stat=db_cursor.fetchone()
- 
+
+     
     if (not db_stat):
+        start_date="2014-01-01"
         for mysql_stmt in open('setup_db.sql'):
             if mysql_stmt.strip():
                 db_cursor.execute(mysql_stmt.strip())
