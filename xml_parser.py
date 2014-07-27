@@ -66,13 +66,6 @@ def dataFetcher(main_url):
                         publisher_id = ids.firstChild.data
                     elif ids.attributes['pub-id-type'].value == "doi":
                         doi = ids.firstChild.data
-                print accession
-                print pmc
-                print pmc_uid
-                print pmid
-                print publisher_id
-                print doi
-                print "----"
                 #insert here
                 contributers = record.getElementsByTagName('contrib')
                 for contributer in contributers:
