@@ -169,7 +169,7 @@ def main():
         db_con=getDbConnection(hostname,username,password)
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
-        if(lastdate == '2014-1-1'):
+        if(lastdate == '2014-01-01'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+lastdate+'&metadataPrefix=pmc'
             dataFetcher(url)
 	
