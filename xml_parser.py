@@ -36,6 +36,7 @@ def getLastId(db_con):
     
 def getLastInsertDate(db_con):
     db_cursor=db_con.cursor()
+    db_cursor.execute("use PubMedRepository")
     db_cursor.execute("SELECT last_insert_date from currentdate");
     last_insert_date=db_cursor.fetchone()
     db_cursor.close()
@@ -170,13 +171,12 @@ def main():
         if(lastdate == '2014-1-1'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+lastdate+'&metadataPrefix=pmc'
             dataFetcher(url)
-        dateobj=datetime.datime.strptime(lastdate,'%Y -%m -%d').date()
+        dateobj=datetime.strptime(lastdate,'%Y -%m -%d').date()
         dateobj +=datetime.timedelta(days=1)
         datestring = dateobj.strftime('%m/%d/%Y')
         url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
-        dataFetcher(url)
-    except:
-        print "Error"
+        dataFetcher(url,db_con)
+   
     finally:
         db_con.close()
     #other function calls
