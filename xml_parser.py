@@ -3,13 +3,14 @@ from xml.dom import minidom
 from xml.etree import ElementTree as ET
 import MySQLdb
 import sys
+import uuid
+from datetime import datetime
 
 def getDbConnection(hostname,username,password):
     db_con = MySQLdb.connect(host=hostname,user=username,passwd=password)
     return db_con
     
-def setupDB(hostname,username,password):
-    db_con=getDbConnection(hostname,username,password)
+def setupDB(db_con):
     db_cursor=db_con.cursor()    
     db_cursor.execute("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'PubMedRepository'");
     db_stat=db_cursor.fetchone()
@@ -20,27 +21,24 @@ def setupDB(hostname,username,password):
         for mysql_stmt in open('setup_db.sql'):
             if mysql_stmt.strip():
                 db_cursor.execute(mysql_stmt.strip())
-        db_cursor.execute("insert into current_date values (%s)" % startdate)
-        
+        db_cursor.execute("insert into currentdate values (%s);",start_date)
+	db_cursor.execute("commit")
+	      
     db_cursor.close()
-    db_con.close()
+    
 
-def getLastId(hostname,username,password):
-    db_con=getDbConnection(hostname,username,password)
+def getLastId(db_con):   
     db_cursor=db_con.cursor() 
     db_cursor.execute("SELECT LAST_INSERT_ID()")
     last_id=db_cursor.fetchone()
     db_cursor.close()
-    db_con.close()
     return last_id[0]
     
-def getLastInsertDate(hostname,username,password):
-    db_con=getDbConnection(hostname,username,password)
+def getLastInsertDate(db_con):
     db_cursor=db_con.cursor()
     db_cursor.execute("SELECT last_insert_date from currentdate");
     last_insert_date=db_cursor.fetchone()
     db_cursor.close()
-    db_con.close()
     return last_insert_date[0]
 
 
@@ -51,8 +49,11 @@ def getData(xml, element):
     else:
         return "none"
 
-def dataFetcher(main_url): 
+def dataFetcher(main_url,db_con):
+    db_cursor=db_con.cursor()
+    db_cursor.execute("use PubMedRepository")
     resumption ="none"
+    db_cursor.execute("begin transaction")
     while True:
         url =""
         if resumption is not "none":
@@ -65,6 +66,7 @@ def dataFetcher(main_url):
             xmldoc = minidom.parseString(response.read())
             elements = xmldoc.getElementsByTagName('record')
             for record in elements:
+                uid=uuid.uuid4()
                 journalId = getData(record, 'journal-id')
                 journalTitle = getData(record, 'journal-title')
                 title = getData(record,'article-title')
@@ -108,14 +110,21 @@ def dataFetcher(main_url):
                         publisher_id = ids.firstChild.data
                     elif ids.attributes['pub-id-type'].value == "doi":
                         doi = ids.firstChild.data
-                #insert here
+                #insert article here           
+                
                 contributers = record.getElementsByTagName('contrib')
+                author=""
                 for contributer in contributers:
                     name_main_xml = contributer.getElementsByTagName('name')
+                    name=""
                     if len(name_main_xml) > 0:
                         name_xml = name_main_xml[0]
                         name = getData(name_xml, 'surname') + " " + getData(name_xml, 'given-names')
-                    #do insert here
+                    #do insert author here
+                    author = name+","+author
+                
+                db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",uid,accession,pmc,pmc_uid,publisher_id,pmid,doi,title,journalId,journalTitle,pub_date,abstract,author)
+                
                 references = record.getElementsByTagName('ref')
                 for reference in references:
                     name_xml = reference.getElementsByTagName('name')
@@ -133,12 +142,45 @@ def dataFetcher(main_url):
                         total_name = name + "," + total_name
                     ref_title = getData(reference,'article-title')
                     ref_id = getData(reference,'pub-id')
+                    db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s)",ref_id,uid,ref_title,total_name,pmid)
             resumption = getData(xmldoc,'resumptionToken')
-                #insert here    
+                #insert reference here 
         except URLError, e:
             print 'Got an error code:', e
         if resumption == "none":
+            db_cursor.execute("commit")
             break;
-           
+    db_cursor.execute("update currentdate set last_insert_date=(%s)",datetime.utcnow())
+    db_cursor.close()
+
             
-dataFetcher('http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from=2014-01-01&metadataPrefix=pmc')
+            
+#dataFetcher('http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from=2014-01-01&metadataPrefix=pmc')
+
+def main():
+    hostname=sys.argv[1]
+    username=sys.argv[2]
+    password=sys.argv[3]
+    
+    
+    try:
+        db_con=getDbConnection(hostname,username,password)
+        setupDB(db_con)
+        lastdate=getLastInsertDate(db_con)
+        if(lastdate == '2014-1-1'):
+            url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+lastdate+'&metadataPrefix=pmc'
+            dataFetcher(url)
+        dateobj=datetime.datime.strptime(lastdate,'%Y -%m -%d').date()
+        dateobj +=datetime.timedelta(days=1)
+        datestring = dateobj.strftime('%m/%d/%Y')
+        url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
+        dataFetcher(url)
+    except:
+        print "Error"
+    finally:
+        db_con.close()
+    #other function calls
+    
+
+if __name__ == "__main__":
+    main()
