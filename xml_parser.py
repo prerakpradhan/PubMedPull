@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 import MySQLdb
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime,timedelta
 
 def getDbConnection(hostname,username,password):
     db_con = MySQLdb.connect(host=hostname,user=username,passwd=password)
@@ -54,7 +54,7 @@ def dataFetcher(main_url,db_con):
     db_cursor=db_con.cursor()
     db_cursor.execute("use PubMedRepository")
     resumption ="none"
-    db_cursor.execute("begin transaction")
+    db_cursor.execute("start transaction")
     while True:
         url =""
         if resumption is not "none":
@@ -151,7 +151,8 @@ def dataFetcher(main_url,db_con):
         if resumption == "none":
             db_cursor.execute("commit")
             break;
-    db_cursor.execute("update currentdate set last_insert_date=(%s)",datetime.utcnow())
+    db_cursor.execute("update currentdate set last_insert_date=(%s)",datetime.utcnow().isoformat())
+    db_cursor.execute("commit")
     db_cursor.close()
 
             
@@ -171,8 +172,10 @@ def main():
         if(lastdate == '2014-1-1'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+lastdate+'&metadataPrefix=pmc'
             dataFetcher(url)
-        dateobj=datetime.strptime(lastdate,'%Y -%m -%d').date()
-        dateobj +=datetime.timedelta(days=1)
+	
+        dateobj=datetime.strptime(lastdate.isoformat(),"%Y-%m-%d")
+	print type(dateobj)
+        dateobj +=timedelta(days=1)
         datestring = dateobj.strftime('%m/%d/%Y')
         url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
         dataFetcher(url,db_con)
