@@ -45,14 +45,14 @@ def getLastInsertDate(db_con):
 def getData(xml, element):
     data_xml = xml.getElementsByTagName(element)
     if len(data_xml) > 0 and hasattr(data_xml[0].firstChild, 'data'):
-        return data_xml[0].firstChild.data.encode('utf-8')
+        return data_xml[0].firstChild.data.encode('ascii','xmlcharrefreplace')
     else:
         return "none"
 
 def getAbstractData(xml, element):
     data_xml = xml.getElementsByTagName(element)
     if len(data_xml) > 0 and hasattr(data_xml[0].firstChild, 'data'):
-        return data_xml[0].firstChild.data.encode('utf-8')
+        return data_xml[0].firstChild.data.encode('ascii','xmlcharrefreplace')
     else:
         return ""
 
@@ -66,7 +66,7 @@ def getAuthor(contributers):
             name = getData(name_xml, 'surname') + " " + getData(name_xml, 'given-names')
                     #do insert author here
         author = name+","+author
-    return author.encode('utf-8')
+    return author.encode('ascii','xmlcharrefreplace')
 
 def getDate(pub_main_date_xml):
     pub_date=""
@@ -81,7 +81,7 @@ def getDate(pub_main_date_xml):
         pub_date = getData(pub_date_xml , 'year')
     else:
         pub_date = "none"
-    return pub_date.encode('utf-8')
+    return pub_date.encode('ascii','xmlcharrefreplace')
 
 def getAbstract(abstract_main_xml):
     abstract = ""
@@ -90,7 +90,7 @@ def getAbstract(abstract_main_xml):
         for sections in abstract_sections_xml:
             part = getAbstractData(sections ,'title') + " " + getData(sections,'p')
             abstract = abstract + part
-    return abstract.encode('utf-8')
+    return abstract.encode('ascii','xmlcharrefreplace')
 
 def getRefAuthor(name_xml):
     total_name=""
@@ -105,7 +105,7 @@ def getRefAuthor(name_xml):
             if hasattr(given_name_xml[0].firstChild, 'data'):
                 name = name + given_name_xml[0].firstChild.data 
         total_name = name + "," + total_name
-    return total_name.encode('utf-8')
+    return total_name.encode('ascii','xmlcharrefreplace')
 
 def dataFetcher(main_url,db_con):
     db_cursor=db_con.cursor()
@@ -189,7 +189,7 @@ def main():
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
         temp = lastdate.strftime("%Y-%m-%d")
-        if(temp == '2014-01-01'):
+        if(temp == '2014-07-27'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&metadataPrefix=pmc'
             dataFetcher(url,db_con)
 
