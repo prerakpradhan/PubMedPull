@@ -42,13 +42,70 @@ def getLastInsertDate(db_con):
     db_cursor.close()
     return last_insert_date[0]
 
-
 def getData(xml, element):
     data_xml = xml.getElementsByTagName(element)
     if len(data_xml) > 0 and hasattr(data_xml[0].firstChild, 'data'):
         return data_xml[0].firstChild.data
     else:
         return "none"
+
+def getAbstractData(xml, element):
+    data_xml = xml.getElementsByTagName(element)
+    if len(data_xml) > 0 and hasattr(data_xml[0].firstChild, 'data'):
+        return data_xml[0].firstChild.data
+    else:
+        return ""
+
+def getAuthor(contributers):
+    author = ""
+    for contributer in contributers:
+        name_main_xml = contributer.getElementsByTagName('name')
+        name=""
+        if len(name_main_xml) > 0:
+            name_xml = name_main_xml[0]
+            name = getData(name_xml, 'surname') + " " + getData(name_xml, 'given-names')
+                    #do insert author here
+        author = name+","+author
+    return author
+
+def getDate(pub_main_date_xml):
+    pub_date=""
+    if len(pub_main_date_xml) > 1:
+        pub_date_xml = pub_main_date_xml[1]
+        pub_year = getData(pub_date_xml , 'year')
+        pub_month = getData(pub_date_xml , 'month')
+        pub_day = getData(pub_date_xml , 'day')
+        pub_date = pub_month + "-" + pub_day +"-" +pub_year
+    elif len(pub_main_date_xml) > 0:
+        pub_date_xml = pub_main_date_xml[0]
+        pub_date = getData(pub_date_xml , 'year')
+    else:
+        pub_date = "none"
+    return pub_date
+
+def getAbstract(abstract_main_xml):
+    abstract = ""
+    if len(abstract_main_xml) > 0:
+        abstract_sections_xml = abstract_main_xml[0].getElementsByTagName('sec')
+        for sections in abstract_sections_xml:
+            part = getAbstractData(sections ,'title') + " " + getData(sections,'p')
+            abstract = abstract + part
+    return abstract
+
+def getRefAuthor(name_xml):
+    total_name=""
+    for names in name_xml:
+        surname_xml = names.getElementsByTagName('surname')
+        given_name_xml = names.getElementsByTagName('given-names')
+        name= ""
+        if len(surname_xml) > 0: 
+            if hasattr(surname_xml[0].firstChild, 'data'):
+                name = surname_xml[0].firstChild.data 
+        if len(given_name_xml) > 0:
+            if hasattr(given_name_xml[0].firstChild, 'data'):
+                name = name + given_name_xml[0].firstChild.data 
+        total_name = name + "," + total_name
+    return total_name
 
 def dataFetcher(main_url,db_con):
     db_cursor=db_con.cursor()
@@ -72,25 +129,9 @@ def dataFetcher(main_url,db_con):
                 journalTitle = getData(record, 'journal-title')
                 title = getData(record,'article-title')
                 pub_main_date_xml=record.getElementsByTagName('pub-date')
-                pub_date="none"
-                if len(pub_main_date_xml) > 1:
-                    pub_date_xml = pub_main_date_xml[1]
-                    pub_year = getData(pub_date_xml , 'year')
-                    pub_month = getData(pub_date_xml , 'month')
-                    pub_day = getData(pub_date_xml , 'day')
-                    pub_date = pub_month + "-" + pub_day +"-" +pub_year
-                elif len(pub_main_date_xml) > 0:
-                    pub_date_xml = pub_main_date_xml[0]
-                    pub_date = getData(pub_date_xml , 'year')
-                else:
-                    pub_date = "none"
-                abstract = "none"
+                pub_date=getDate(pub_main_date_xml)
                 abstract_main_xml = record.getElementsByTagName('abstract')
-                if len(abstract_main_xml) > 0:
-                    abstract_sections_xml = abstract_main_xml[0].getElementsByTagName('sec')
-                    for sections in abstract_sections_xml:
-                        part = getData(sections ,'title') + " " + getData(sections,'p')
-                        abstract = abstract + part
+                abstract = getAbstract(abstract_main_xml)
                 pmid_xml=record.getElementsByTagName('article-id')
                 pmid = "none"
                 pmc_uid = "none"
@@ -112,35 +153,13 @@ def dataFetcher(main_url,db_con):
                     elif ids.attributes['pub-id-type'].value == "doi":
                         doi = ids.firstChild.data
                 #insert article here           
-                
                 contributers = record.getElementsByTagName('contrib')
-                author=""
-                for contributer in contributers:
-                    name_main_xml = contributer.getElementsByTagName('name')
-                    name=""
-                    if len(name_main_xml) > 0:
-                        name_xml = name_main_xml[0]
-                        name = getData(name_xml, 'surname') + " " + getData(name_xml, 'given-names')
-                    #do insert author here
-                    author = name+","+author
-                
+                author=getAuthor(contributers) 
                 db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",uid,accession,pmc,pmc_uid,publisher_id,pmid,doi,title,journalId,journalTitle,pub_date,abstract,author)
-                
                 references = record.getElementsByTagName('ref')
                 for reference in references:
                     name_xml = reference.getElementsByTagName('name')
-                    total_name=""
-                    for names in name_xml:
-                        surname_xml = names.getElementsByTagName('surname')
-                        given_name_xml = names.getElementsByTagName('given-names')
-                        name= ""
-                        if len(surname_xml) > 0: 
-                            if hasattr(surname_xml[0].firstChild, 'data'):
-                                name = surname_xml[0].firstChild.data 
-                        if len(given_name_xml) > 0:
-                            if hasattr(given_name_xml[0].firstChild, 'data'):
-                                name = name + given_name_xml[0].firstChild.data 
-                        total_name = name + "," + total_name
+                    total_name=getRefAuthor(name_xml)
                     ref_title = getData(reference,'article-title')
                     ref_id = getData(reference,'pub-id')
                     db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s)",ref_id,uid,ref_title,total_name,pmid)
@@ -155,9 +174,7 @@ def dataFetcher(main_url,db_con):
     db_cursor.execute("commit")
     db_cursor.close()
 
-            
-            
-#dataFetcher('http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from=2014-01-01&metadataPrefix=pmc')
+
 
 def main():
     hostname=sys.argv[1]
