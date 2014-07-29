@@ -167,7 +167,7 @@ def dataFetcher(main_url,db_con):
                 #insert reference here 
         except URLError, e:
             print 'Got an error code:', e
-        if resumption != "none":
+        if resumption == "none":
             db_cursor.execute("commit")
             break;
     db_cursor.execute("update currentdate set last_insert_date=(%s)",datetime.utcnow().isoformat())
