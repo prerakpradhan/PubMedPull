@@ -186,14 +186,13 @@ def main():
         db_con=getDbConnection(hostname,username,password)
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
-        if(lastdate == '2014-01-01'):
+        temp = lastdate.strftime("%Y-%m-%d")
+        if(temp == '2014-01-01'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+lastdate+'&metadataPrefix=pmc'
             dataFetcher(url)
-	
-        dateobj=datetime.strptime(lastdate.isoformat(),"%Y-%m-%d")
-	print type(dateobj)
-        dateobj +=timedelta(days=1)
-        datestring = dateobj.strftime('%m/%d/%Y')
+
+        lastdate +=timedelta(days=1)
+        datestring = lastdate.strftime("%Y-%m-%d")
         url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
         dataFetcher(url,db_con)
    
