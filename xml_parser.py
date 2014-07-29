@@ -155,7 +155,6 @@ def dataFetcher(main_url,db_con):
                 #insert article here           
                 contributers = record.getElementsByTagName('contrib')
                 author=getAuthor(contributers) 
-                print abstract
                 db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",uid,accession,pmc,pmc_uid,publisher_id,pmid,doi,title,journalId,journalTitle,pub_date,abstract,author)
                 references = record.getElementsByTagName('ref')
                 for reference in references:
