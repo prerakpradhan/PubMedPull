@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime,timedelta
 
 def getDbConnection(hostname,username,password):
-    db_con = MySQLdb.connect(host=hostname,user=username,passwd=password)
+    db_con = MySQLdb.connect(host=hostname,user=username,passwd=password,charset='utf8',use_unicode=True)
     return db_con
     
 def setupDB(db_con):
@@ -45,14 +45,14 @@ def getLastInsertDate(db_con):
 def getData(xml, element):
     data_xml = xml.getElementsByTagName(element)
     if len(data_xml) > 0 and hasattr(data_xml[0].firstChild, 'data'):
-        return data_xml[0].firstChild.data.encode('ascii','xmlcharrefreplace')
+        return data_xml[0].firstChild.data
     else:
         return "none"
 
 def getAbstractData(xml, element):
     data_xml = xml.getElementsByTagName(element)
     if len(data_xml) > 0 and hasattr(data_xml[0].firstChild, 'data'):
-        return data_xml[0].firstChild.data.encode('ascii','xmlcharrefreplace')
+        return data_xml[0].firstChild.data
     else:
         return ""
 
@@ -66,7 +66,7 @@ def getAuthor(contributers):
             name = getData(name_xml, 'surname') + " " + getData(name_xml, 'given-names')
                     #do insert author here
         author = name+","+author
-    return author.encode('ascii','xmlcharrefreplace')
+    return author
 
 def getDate(pub_main_date_xml):
     pub_date=""
@@ -81,7 +81,7 @@ def getDate(pub_main_date_xml):
         pub_date = getData(pub_date_xml , 'year')
     else:
         pub_date = "none"
-    return pub_date.encode('ascii','xmlcharrefreplace')
+    return pub_date
 
 def getAbstract(abstract_main_xml):
     abstract = ""
@@ -90,7 +90,7 @@ def getAbstract(abstract_main_xml):
         for sections in abstract_sections_xml:
             part = getAbstractData(sections ,'title') + " " + getData(sections,'p')
             abstract = abstract + part
-    return abstract.encode('ascii','xmlcharrefreplace')
+    return abstract
 
 def getRefAuthor(name_xml):
     total_name=""
@@ -105,7 +105,7 @@ def getRefAuthor(name_xml):
             if hasattr(given_name_xml[0].firstChild, 'data'):
                 name = name + given_name_xml[0].firstChild.data 
         total_name = name + "," + total_name
-    return total_name.encode('ascii','xmlcharrefreplace')
+    return total_name
 
 def dataFetcher(main_url,db_con):
     db_cursor=db_con.cursor()
@@ -183,13 +183,12 @@ def main():
     username=sys.argv[2]
     password=sys.argv[3]
     
-    
-    try:
-        db_con=getDbConnection(hostname,username,password)
+    db_con=getDbConnection(hostname,username,password)
+    try:       
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
         temp = lastdate.strftime("%Y-%m-%d")
-        if(temp == '2014-07-27'):
+        if(temp == '2014-01-01'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&metadataPrefix=pmc'
             dataFetcher(url,db_con)
 
