@@ -17,7 +17,7 @@ def setupDB(db_con):
 
      
     if (not db_stat):
-        start_date="2014-01-01"
+        start_date="2014-08-03"
         for mysql_stmt in open('setup_db.sql'):
             if mysql_stmt.strip():
                 db_cursor.execute(mysql_stmt.strip())
@@ -118,6 +118,7 @@ def dataFetcher(main_url,db_con):
     count =0
     resumption ="none"
     db_cursor.execute("start transaction")
+    art_num=1
     while True:
         url =""
         if resumption is not "none":
@@ -129,7 +130,9 @@ def dataFetcher(main_url,db_con):
             response = urlopen(requestURL)
             xmldoc = minidom.parseString(response.read())
             elements = xmldoc.getElementsByTagName('record')
+            
             for record in elements:
+                print "Retrieving article "+str(art_num)
                 uid=uuid.uuid4()
                 journalId = getData(record, 'journal-id')
                 journalTitle = getData(record, 'journal-title')
@@ -170,16 +173,19 @@ def dataFetcher(main_url,db_con):
                         abstract = getAbstract(abstract_main_xml)
                         db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,accession,pmc,pmc_uid,publisher_id,pmid,doi,title,journalId,journalTitle,pub_date,abstract,author))
                         references = fullTextxmldoc.getElementsByTagName('ref')
+                        ref_num=1
                         for reference in references:
+                            print "Retrieving reference "+str(ref_num)
                             rid=uuid.uuid4()
                             name_xml = reference.getElementsByTagName('name')
                             total_name=getRefAuthor(name_xml)
                             ref_title = getData(reference,'article-title')
                             ref_id = getData(reference,'pub-id')
 			    db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,pmid))
+                            ref_num=ref_num+1
                     except URLError, e:
                         exception = exception + 1         
-                    
+            	art_num=art_num+1          
             resumption = getData(xmldoc,'resumptionToken')
             
                 #insert reference here 
@@ -203,14 +209,14 @@ def main():
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
         temp = lastdate.strftime("%Y-%m-%d")
-        if(temp == '2014-01-01'):
+        if(temp == '2014-08-03'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&metadataPrefix=pmc_fm&set=pmc-open'
             dataFetcher(url,db_con)
-
-        lastdate +=timedelta(days=1)
-        datestring = lastdate.strftime("%Y-%m-%d")
-        url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc_fm&set=pmc-open'
-        dataFetcher(url,db_con)
+        else:
+            lastdate +=timedelta(days=1)
+            datestring = lastdate.strftime("%Y-%m-%d")
+            url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc_fm&set=pmc-open'
+            dataFetcher(url,db_con)
    
     finally:
         db_con.close()
