@@ -112,7 +112,7 @@ def getRefAuthor(name_xml):
         total_name = name + "," + total_name
     return total_name
 
-def dataFetcher(main_url,db_com):
+def dataFetcher(main_url,db_con):
     db_cursor=db_con.cursor()
     db_cursor.execute("use PubMedRepository")
     count =0
@@ -176,9 +176,10 @@ def dataFetcher(main_url,db_com):
                             total_name=getRefAuthor(name_xml)
                             ref_title = getData(reference,'article-title')
                             ref_id = getData(reference,'pub-id')
+			    db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,pmid))
                     except URLError, e:
                         exception = exception + 1         
-                    db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,pmid))
+                    
             resumption = getData(xmldoc,'resumptionToken')
             
                 #insert reference here 
@@ -197,6 +198,7 @@ def main():
     password=sys.argv[3]
     
     db_con=getDbConnection(hostname,username,password)
+    print 'type of db_con'+str(type(db_con))
     try:       
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
