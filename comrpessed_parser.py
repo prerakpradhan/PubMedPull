@@ -168,7 +168,7 @@ def dataFetcher(main_url,db_con):
 						total_name=getRefAuthor(name_xml)
 						ref_title = getData(reference,'article-title')
 						ref_id = getData(reference,'pub-id')                 
-                    db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,pmid))
+						db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,id_dict['pmid']))
             resumption = getData(xmldoc,'resumptionToken')
                 #insert reference here 
         except URLError, e:
