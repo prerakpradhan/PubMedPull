@@ -146,6 +146,7 @@ def dataFetcher(main_url,db_con):
             for record in elements:
                 uid=uuid.uuid4()
 				id_dict = init_dic()
+				pmid_xml=record.getElementsByTagName('article-id')
                 for ids in pmid_xml:
                     id_dict[ids.attributes['pub-id-type'].value] = ids.firstChild.data
 				if id_dict['pmc-uid'] != "none":
@@ -156,7 +157,6 @@ def dataFetcher(main_url,db_con):
 					pub_date=getDate(pub_main_date_xml)
 					abstract_main_xml = record.getElementsByTagName('abstract')
 					abstract = getAbstract(abstract_main_xml)
-					pmid_xml=record.getElementsByTagName('article-id')
 					#insert article here           
 					contributers = record.getElementsByTagName('contrib')
 					author=getAuthor(contributers) 
