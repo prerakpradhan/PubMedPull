@@ -168,7 +168,6 @@ def dataFetcher(main_url,db_con):
 						total_name=getRefAuthor(name_xml)
 						ref_title = getData(reference,'article-title')
 						ref_id = getData(reference,'pub-id')                 
-                    
                     db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,pmid))
             resumption = getData(xmldoc,'resumptionToken')
                 #insert reference here 
@@ -196,11 +195,11 @@ def main():
         if(temp == '2014-01-01'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&metadataPrefix=pmc'
             dataFetcher(url,db_con)
-
-        lastdate +=timedelta(days=1)
-        datestring = lastdate.strftime("%Y-%m-%d")
-        url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
-        dataFetcher(url,db_con)
+		else:
+			lastdate +=timedelta(days=1)
+			datestring = lastdate.strftime("%Y-%m-%d")
+			url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
+			dataFetcher(url,db_con)
    
     finally:
         db_con.close()
