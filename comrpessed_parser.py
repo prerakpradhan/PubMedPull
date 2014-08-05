@@ -114,6 +114,16 @@ def getRefAuthor(name_xml):
         total_name = name + "," + total_name
     return total_name
 
+def init_dic():
+    dict = {}
+    dict[u"pmcid"] = "none"
+    dict[u"pmc-uid"] = "none"
+    dict[u"pmid"]= "none"
+    dict[u"publisher-id"] = "none"
+    dict[u"accession"] = "none"
+    dict[u"doi"] = "none"
+    return dict
+
 def dataFetcher(main_url,db_con):
     db_cursor=db_con.cursor()
     db_cursor.execute("use PubMedRepository")
@@ -135,44 +145,29 @@ def dataFetcher(main_url,db_con):
             elements = xmldoc.getElementsByTagName('record')
             for record in elements:
                 uid=uuid.uuid4()
-                journalId = getData(record, 'journal-id')
-                journalTitle = getData(record, 'journal-title')
-                title = getData(record,'article-title')
-                pub_main_date_xml=record.getElementsByTagName('pub-date')
-                pub_date=getDate(pub_main_date_xml)
-                abstract_main_xml = record.getElementsByTagName('abstract')
-                abstract = getAbstract(abstract_main_xml)
-                pmid_xml=record.getElementsByTagName('article-id')
-                pmid = "none"
-                pmc_uid = "none"
-                pmc = "none"
-                accession = "none"
-                publisher_id = "none"
-                doi = "none"
+				id_dict = init_dic()
                 for ids in pmid_xml:
-                    if ids.attributes['pub-id-type'].value == "accession":
-                        accession = ids.firstChild.data
-                    elif ids.attributes['pub-id-type'].value == "pmcid":
-                        pmc = ids.firstChild.data
-                    elif ids.attributes['pub-id-type'].value == "pmc-uid":
-                        pmc_uid = ids.firstChild.data
-                    elif ids.attributes['pub-id-type'].value == "pmid":
-                        pmid = ids.firstChild.data
-                    elif ids.attributes['pub-id-type'].value == "publisher-id":
-                        publisher_id = ids.firstChild.data
-                    elif ids.attributes['pub-id-type'].value == "doi":
-                        doi = ids.firstChild.data
-                #insert article here           
-                contributers = record.getElementsByTagName('contrib')
-                author=getAuthor(contributers) 
-                db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,accession,pmc,pmc_uid,publisher_id,pmid,doi,title,journalId,journalTitle,pub_date,abstract,author))
-                references = record.getElementsByTagName('ref')
-                for reference in references:
-                    rid=uuid.uuid4()
-                    name_xml = reference.getElementsByTagName('name')
-                    total_name=getRefAuthor(name_xml)
-                    ref_title = getData(reference,'article-title')
-                    ref_id = getData(reference,'pub-id')                 
+                    id_dict[ids.attributes['pub-id-type'].value] = ids.firstChild.data
+				if id_dict['pmc-uid'] != "none":
+					journalId = getData(record, 'journal-id')
+					journalTitle = getData(record, 'journal-title')
+					title = getData(record,'article-title')
+					pub_main_date_xml=record.getElementsByTagName('pub-date')
+					pub_date=getDate(pub_main_date_xml)
+					abstract_main_xml = record.getElementsByTagName('abstract')
+					abstract = getAbstract(abstract_main_xml)
+					pmid_xml=record.getElementsByTagName('article-id')
+					#insert article here           
+					contributers = record.getElementsByTagName('contrib')
+					author=getAuthor(contributers) 
+					db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,id_dict['accession'],id_dict['pmcid'],id_dict['pmc-uid'],id_dict['publisher-id'],id_dict['pmid'],id_dict['doi'],title,journalId,journalTitle,pub_date,abstract,author))
+					references = record.getElementsByTagName('ref')
+					for reference in references:
+						rid=uuid.uuid4()
+						name_xml = reference.getElementsByTagName('name')
+						total_name=getRefAuthor(name_xml)
+						ref_title = getData(reference,'article-title')
+						ref_id = getData(reference,'pub-id')                 
                     
                     db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,pmid))
             resumption = getData(xmldoc,'resumptionToken')
