@@ -19,7 +19,7 @@ def setupDB(db_con):
 
      
     if (not db_stat):
-        start_date="2014-07-27"
+        start_date="2014-08-05"
         for mysql_stmt in open('setup_db.sql'):
             if mysql_stmt.strip():
                 db_cursor.execute(mysql_stmt.strip())
@@ -114,6 +114,29 @@ def getRefAuthor(name_xml):
         total_name = name + "," + total_name
     return total_name
 
+def storeArticleReferences(id_dict,uid,record,db_cursor):
+   references = record.getElementsByTagName('ref')
+   for reference in references:
+       rid=uuid.uuid4()
+       name_xml = reference.getElementsByTagName('name')
+       total_name=getRefAuthor(name_xml)
+       ref_title = getData(reference,'article-title')
+       ref_id = getData(reference,'pub-id')                 
+       db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,id_dict['pmid']))
+
+
+def storeArticleMetadata(id_dict,uid, record, db_cursor):
+    journalId = getData(record, 'journal-id')
+    journalTitle = getData(record, 'journal-title')
+    title = getData(record,'article-title')
+    pub_main_date_xml=record.getElementsByTagName('pub-date')
+    pub_date=getDate(pub_main_date_xml)
+    abstract_main_xml = record.getElementsByTagName('abstract')
+    abstract = getAbstract(abstract_main_xml)          
+    contributers = record.getElementsByTagName('contrib')
+    author=getAuthor(contributers) 
+    db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,id_dict['accession'],id_dict['pmcid'],id_dict['pmc-uid'],id_dict['publisher-id'],id_dict['pmid'],id_dict['doi'],title,journalId,journalTitle,pub_date,abstract,author))
+
 def init_dic():
     dict = {}
     dict[u"pmcid"] = "none"
@@ -145,33 +168,16 @@ def dataFetcher(main_url,db_con):
             xmldoc = minidom.parseString(f.read())
             elements = xmldoc.getElementsByTagName('record')
             for record in elements:
-                uid=uuid.uuid4()
-		id_dict = init_dic()
+		uid=uuid.uuid4()
+                id_dict = init_dic()
 		pmid_xml=record.getElementsByTagName('article-id')
                 for ids in pmid_xml:
                     id_dict[ids.attributes['pub-id-type'].value] = ids.firstChild.data
 		if id_dict['pmc-uid'] != "none":
-		    journalId = getData(record, 'journal-id')
-	            journalTitle = getData(record, 'journal-title')
-		    title = getData(record,'article-title')
-		    pub_main_date_xml=record.getElementsByTagName('pub-date')
-		    pub_date=getDate(pub_main_date_xml)
-		    abstract_main_xml = record.getElementsByTagName('abstract')
-		    abstract = getAbstract(abstract_main_xml)
-		    #insert article here           
-		    contributers = record.getElementsByTagName('contrib')
-		    author=getAuthor(contributers) 
-		    db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,id_dict['accession'],id_dict['pmcid'],id_dict['pmc-uid'],id_dict['publisher-id'],id_dict['pmid'],id_dict['doi'],title,journalId,journalTitle,pub_date,abstract,author))
-		    references = record.getElementsByTagName('ref')
-		    for reference in references:
-			rid=uuid.uuid4()
-			name_xml = reference.getElementsByTagName('name')
-			total_name=getRefAuthor(name_xml)
-			ref_title = getData(reference,'article-title')
-			ref_id = getData(reference,'pub-id')                 
-			db_cursor.execute("insert into article_references values (%s,%s,%s,%s,%s,%s)",(rid,ref_id,uid,ref_title,total_name,id_dict['pmid']))
+                    storeArticleMetadata(id_dict,uid, record, db_cursor)
+                    storeArticleReferences(id_dict,uid,record,db_cursor)
             resumption = getData(xmldoc,'resumptionToken')
-                #insert reference here 
+            #insert reference here 
         except URLError, e:
             print 'Got an error code:', e
         if resumption == "none":
@@ -193,7 +199,7 @@ def main():
         setupDB(db_con)
         lastdate=getLastInsertDate(db_con)
         temp = lastdate.strftime("%Y-%m-%d")
-        if(temp == '2014-07-27'):
+        if(temp == '2014-08-05'):
             url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&metadataPrefix=pmc'
             dataFetcher(url,db_con)
         else:
