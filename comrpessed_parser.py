@@ -137,7 +137,7 @@ def storeArticleMetadata(id_dict,uid, record, db_cursor):
     author=getAuthor(contributers) 
     db_cursor.execute("insert into article_meta values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,id_dict['accession'],id_dict['pmcid'],id_dict['pmc-uid'],id_dict['publisher-id'],id_dict['pmid'],id_dict['doi'],title,journalId,journalTitle,pub_date,abstract,author))
 
-def init_dic():
+def initDic():
     dict = {}
     dict[u"pmcid"] = "none"
     dict[u"pmc-uid"] = "none"
@@ -169,7 +169,7 @@ def dataFetcher(main_url,db_con):
             elements = xmldoc.getElementsByTagName('record')
             for record in elements:
 		uid=uuid.uuid4()
-                id_dict = init_dic()
+                id_dict = initDic()
 		pmid_xml=record.getElementsByTagName('article-id')
                 for ids in pmid_xml:
                     id_dict[ids.attributes['pub-id-type'].value] = ids.firstChild.data
