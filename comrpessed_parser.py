@@ -172,10 +172,11 @@ def dataFetcher(main_url,db_con):
                 id_dict = initDic()
 		pmid_xml=record.getElementsByTagName('article-id')
                 for ids in pmid_xml:
-                    id_dict[ids.attributes['pub-id-type'].value] = ids.firstChild.data
-		if id_dict['pmc-uid'] != "none":
-                    storeArticleMetadata(id_dict,uid, record, db_cursor)
-                    storeArticleReferences(id_dict,uid,record,db_cursor)
+                    if ids.hasAttribute("pub-id-type"):
+                    	print ids.attributes['pub-id-type'].value
+                        id_dict[ids.attributes['pub-id-type'].value] = ids.firstChild.data
+                storeArticleMetadata(id_dict,uid, record, db_cursor)
+                storeArticleReferences(id_dict,uid,record,db_cursor)
             resumption = getData(xmldoc,'resumptionToken')
             #insert reference here 
         except URLError, e:
