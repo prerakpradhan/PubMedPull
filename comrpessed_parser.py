@@ -205,7 +205,7 @@ def main():
         else:
             lastdate +=timedelta(days=1)
 	    datestring = lastdate.strftime("%Y-%m-%d")
-	    url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&metadataPrefix=pmc'
+	    url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+datestring+'&until=date-here&metadataPrefix=pmc'
             dataFetcher(url,db_con)
    
     finally:
