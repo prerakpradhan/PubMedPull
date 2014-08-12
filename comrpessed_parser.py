@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime,timedelta
 from StringIO import StringIO
 import gzip
+import os,sys
 
 def getDbConnection(hostname,username,password):
     db_con = MySQLdb.connect(host=hostname,user=username,passwd=password,charset='utf8',use_unicode=True)
@@ -20,7 +21,7 @@ def setupDB(db_con):
      
     if (not db_stat):
         start_date="2014-08-05"
-        for mysql_stmt in open('setup_db.sql'):
+        for mysql_stmt in open(os.path.dirname(os.path.realpath(__file__))+"/setup_db.sql"):
             if mysql_stmt.strip():
                 db_cursor.execute(mysql_stmt.strip())
         db_cursor.execute("insert into currentdate values (%s);",start_date)
