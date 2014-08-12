@@ -202,7 +202,7 @@ def main():
         lastdate=getLastInsertDate(db_con)
         temp = lastdate.strftime("%Y-%m-%d")
         if(temp == '2014-08-05'):
-            url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&until=date-here&metadataPrefix=pmc'
+            url = 'http://www.pubmedcentral.nih.gov/oai/oai.cgi?verb=ListRecords&from='+temp+'&metadataPrefix=pmc'
             dataFetcher(url,db_con)
         else:
             lastdate +=timedelta(days=1)
